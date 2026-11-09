@@ -1,6 +1,6 @@
 # Tarea Unidad 6: Interfaz + API Gateway
 
-Interfaz web para el chat del curso. Usa el chat base (users, channels, messages), nuestro microservicio **profiles** y los microservicios de otros dos equipos: **media** (archivos) y **polls** (encuestas).
+Interfaz web para el chat del curso. Usa el chat base (users, channels, messages), nuestro microservicio **profiles** y los microservicios de otros dos equipos: **media** y **polls**.
 
 Esta entrega se ejecuta localmente con docker-compose, como pide el enunciado de la unidad. No se desplegó en el cluster de Kubernetes. El microservicio profiles sí se desplegó en Kubernetes en la entrega anterior.
 
