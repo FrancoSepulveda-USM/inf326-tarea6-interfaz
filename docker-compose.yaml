@@ -1,0 +1,176 @@
+#Codigo de otros equipos -> servicios-externos
+services:
+  #Interfaz
+  interface:
+    build:
+      context: ./interface
+      args:
+        VITE_GATEWAY_URI: http://localhost:8080/graphql/
+    ports:
+      - "3000:80"
+    #Parte después del gateway
+    depends_on: [api-gateway]
+  #Gateway
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "8080:5000"
+    environment:
+    #Variables
+      USERS_URL: http://users:8000
+      CHANNELS_URL: http://channels:8000
+      MESSAGES_URL: http://messages:8000
+      PROFILES_URL: http://profiles:8000
+      MEDIA_URL: http://media:8000
+      POLLS_URL: http://polls-api:8004
+      GATEWAY_PUBLIC_URL: http://localhost:8080
+    depends_on: [users, channels, messages, profiles, media, polls-api]
+    restart: unless-stopped
+
+  users:
+    build: ./servicios-base/users
+    ports: ["8001:8000"]
+    environment:
+      MONGODB_URL: mongodb://users-mongodb:27017
+    restart: unless-stopped
+
+  channels:
+    build: ./servicios-base/channels
+    ports: ["8002:8000"]
+    environment:
+      MONGODB_URL: mongodb://channels-mongodb:27017
+    restart: unless-stopped
+
+  messages:
+    build: ./servicios-base/messages
+    ports: ["8003:8000"]
+    environment:
+      USERS_URL: http://users:8000
+      CHANNELS_URL: http://channels:8000
+      MONGODB_URL: mongodb://messages-mongodb:27017
+    restart: unless-stopped
+
+  users-mongodb:
+    image: mongo:7
+    volumes: [users-data:/data/db]
+  channels-mongodb:
+    image: mongo:7
+    volumes: [channels-data:/data/db]
+  messages-mongodb:
+    image: mongo:7
+    volumes: [messages-data:/data/db]
+
+  profiles:
+    build: ./profiles
+    ports: ["8006:8000"]
+    environment:
+      USERS_URL: http://users:8000
+      MONGODB_URL: mongodb://profiles-mongodb:27017
+      AVATARS_DIR: /avatars
+      PUBLIC_URL: http://localhost:8080/files/profiles
+    volumes: [profiles-avatars:/avatars]
+    restart: unless-stopped
+
+  profiles-mongodb:
+    image: mongo:7
+    volumes: [profiles-data:/data/db]
+
+  #Sercicios externos
+  media:
+    build: ./servicios-externos/media
+    ports: ["8005:8000"]
+    environment:
+      MONGODB_URL: mongodb://media-mongodb:27017
+      USERS_URL: http://users:8000
+      CHANNELS_URL: http://channels:8000
+      RABBITMQ_URL: amqp://chat:chat@media-rabbitmq:5672/%2F
+      MEDIA_STORAGE: /media-storage
+    volumes: [media-storage:/media-storage]
+    depends_on:
+      media-mongodb: {condition: service_healthy}
+      media-rabbitmq: {condition: service_healthy}
+    restart: unless-stopped
+
+  media-mongodb:
+    image: mongo:7
+    volumes: [media-data:/data/db]
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  media-rabbitmq:
+    image: rabbitmq:4-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: chat
+      RABBITMQ_DEFAULT_PASS: chat
+    healthcheck:
+      test: ["CMD", "su-exec", "rabbitmq", "rabbitmq-diagnostics", "-q", "ping"]
+      start_period: 20s
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  polls-migrate:
+    build: ./servicios-externos/polls
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://polls:polls-dev-password@polls-postgres:5432/polls
+    depends_on:
+      polls-postgres: {condition: service_healthy}
+    restart: "no"
+
+  polls-api:
+    build: ./servicios-externos/polls
+    ports: ["8004:8004"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://polls:polls-dev-password@polls-postgres:5432/polls
+      MESSAGES_ENABLED: "true"
+      MESSAGES_BASE_URL: http://messages:8000
+      RABBITMQ_URL: amqp://polls:polls-dev-password@polls-rabbitmq:5672/
+      RABBITMQ_EXCHANGE: polls.events
+    depends_on:
+      polls-migrate: {condition: service_completed_successfully}
+      polls-postgres: {condition: service_healthy}
+      polls-rabbitmq: {condition: service_healthy}
+    restart: unless-stopped
+
+  polls-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: polls
+      POSTGRES_USER: polls
+      POSTGRES_PASSWORD: polls-dev-password
+    volumes: [polls-data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U polls -d polls"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  polls-rabbitmq:
+    image: rabbitmq:4-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: polls
+      RABBITMQ_DEFAULT_PASS: polls-dev-password
+    healthcheck:
+      test: ["CMD", "su-exec", "rabbitmq", "rabbitmq-diagnostics", "-q", "ping"]
+      start_period: 20s
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+volumes:
+  users-data:
+  channels-data:
+  messages-data:
+  profiles-data:
+  profiles-avatars:
+  media-data:
+  media-storage:
+  polls-data:
+
+networks:
+  default:
+    name: microsvcs

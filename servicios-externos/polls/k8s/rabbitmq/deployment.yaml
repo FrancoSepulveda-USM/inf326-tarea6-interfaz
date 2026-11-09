@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbitmq
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: rabbitmq
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+    spec:
+      containers:
+        - name: rabbitmq
+          image: rabbitmq:4-management-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: amqp
+              containerPort: 5672
+              protocol: TCP
+            - name: management
+              containerPort: 15672
+              protocol: TCP
+          volumeMounts:
+            - name: rabbitmq-config
+              mountPath: /etc/rabbitmq/conf.d/30-resource-limits.conf
+              subPath: rabbitmq.conf
+              readOnly: true
+          env:
+            - name: RABBITMQ_DEFAULT_USER
+              value: polls
+            - name: RABBITMQ_DEFAULT_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: polls-credentials
+                  key: RABBITMQ_PASSWORD
+          startupProbe:
+            tcpSocket:
+              port: amqp
+            periodSeconds: 5
+            timeoutSeconds: 1
+            failureThreshold: 36
+          livenessProbe:
+            tcpSocket:
+              port: amqp
+            periodSeconds: 10
+            timeoutSeconds: 1
+            failureThreshold: 6
+          readinessProbe:
+            exec:
+              command:
+                - bash
+                - -ec
+                - "</dev/tcp/127.0.0.1/5672 && </dev/tcp/127.0.0.1/15672"
+            periodSeconds: 5
+            timeoutSeconds: 1
+            failureThreshold: 2
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 100
+            runAsGroup: 101
+            allowPrivilegeEscalation: false
+            seccompProfile:
+              type: RuntimeDefault
+            capabilities:
+              drop: ["ALL"]
+      volumes:
+        - name: rabbitmq-config
+          configMap:
+            name: rabbitmq-config

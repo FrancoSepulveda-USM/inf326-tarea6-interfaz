@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: media-mongodb
+  namespace: grupo-archivos-adjuntos
+  labels:
+    app: media-mongodb
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: media-mongodb
+  template:
+    metadata:
+      labels:
+        app: media-mongodb
+    spec:
+      containers:
+        - name: mongodb
+          image: mongo:7
+          args:
+            - mongod
+            - --bind_ip_all
+            - --wiredTigerCacheSizeGB
+            - "0.25"
+          ports:
+            - containerPort: 27017
+              name: mongodb
+          resources:
+            requests:
+              cpu: 50m
+              memory: 192Mi
+            limits:
+              cpu: 250m
+              memory: 384Mi
+          volumeMounts:
+            - name: data
+              mountPath: /data/db
+          livenessProbe:
+            tcpSocket:
+              port: 27017
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 2
+          readinessProbe:
+            tcpSocket:
+              port: 27017
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: media-mongodb-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: media-mongodb
+  namespace: grupo-archivos-adjuntos
+  labels:
+    app: media-mongodb
+spec:
+  type: ClusterIP
+  ports:
+    - port: 27017
+      targetPort: 27017
+      name: mongodb
+  selector:
+    app: media-mongodb

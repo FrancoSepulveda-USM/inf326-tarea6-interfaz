@@ -1,0 +1,35 @@
+# Servicio polls
+
+type PollOption {
+  option_id: ID!
+  position: Int!
+  text: String!
+  vote_count: Int!
+}
+
+type Poll {
+  poll_id: ID!
+  channel_id: ID!
+  author_id: ID!
+  question: String!
+  options: [PollOption!]!
+  status: String!
+  duration_minutes: Int!
+  closes_at: String!
+  created_at: String!
+  closed_at: String
+  total_votes: Int!
+  author: User
+}
+
+extend type Query {
+  "Polls no tiene un endpoint para listar: se descubren por sus anuncios en el chat."
+  listPolls(channelId: ID!): [Poll!]!
+  getPoll(id: ID!): Poll
+}
+
+extend type Mutation {
+  createPoll(channelId: ID!, authorId: ID!, question: String!, options: [String!]!, durationMinutes: Int): Poll!
+  votePoll(pollId: ID!, voterId: ID!, optionId: ID!): Poll!
+  closePoll(pollId: ID!, authorId: ID!): Poll!
+}

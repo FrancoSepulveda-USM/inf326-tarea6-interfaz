@@ -1,0 +1,20 @@
+FROM node:20-alpine AS build
+
+WORKDIR /code
+
+COPY ./app/package.json ./app/package-lock.json ./
+
+RUN npm ci
+
+COPY ./app/ ./
+
+# URL del API Gateway que usará el navegador (se fija al compilar)
+ARG VITE_GATEWAY_URI=http://localhost:8080/graphql/
+ENV VITE_GATEWAY_URI=$VITE_GATEWAY_URI
+
+RUN npm run build
+
+FROM nginx:alpine
+
+COPY --from=build /code/dist /usr/share/nginx/html
+COPY ./nginx.conf /etc/nginx/conf.d/default.conf

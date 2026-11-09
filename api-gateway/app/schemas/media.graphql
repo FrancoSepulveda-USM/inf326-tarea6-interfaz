@@ -1,0 +1,24 @@
+# Servicio media
+type Attachment {
+  id: ID!
+  channel_id: ID!
+  uploader_id: ID!
+  filename: String!
+  mime_type: String!
+  size_bytes: Int!
+  category: String!
+  created_at: String!
+  "URL del API Gateway para descargar o ver el archivo."
+  download_url: String!
+  uploader: User
+}
+
+extend type Query {
+  "userId: usuario que consulta (media exige el header X-User-Id)."
+  listAttachments(channelId: ID!, userId: ID!): [Attachment!]!
+}
+
+extend type Mutation {
+  uploadAttachment(channelId: ID!, userId: ID!, filename: String!, contentType: String!, dataBase64: String!): Attachment!
+  deleteAttachment(attachmentId: ID!, userId: ID!): Boolean!
+}

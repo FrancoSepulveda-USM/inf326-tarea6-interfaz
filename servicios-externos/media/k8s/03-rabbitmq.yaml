@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbitmq
+  namespace: grupo-archivos-adjuntos
+  labels:
+    app: rabbitmq
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: rabbitmq
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+    spec:
+      containers:
+        - name: rabbitmq
+          image: rabbitmq:3-alpine
+          ports:
+            - containerPort: 5672
+              name: amqp
+          env:
+            - name: RABBITMQ_DEFAULT_USER
+              value: "chat"
+            - name: RABBITMQ_DEFAULT_PASS
+              value: "chat"
+          resources:
+            requests:
+              cpu: 50m
+              memory: 192Mi
+            limits:
+              cpu: 250m
+              memory: 384Mi
+          livenessProbe:
+            tcpSocket:
+              port: 5672
+            initialDelaySeconds: 45
+            periodSeconds: 15
+            timeoutSeconds: 2
+          readinessProbe:
+            tcpSocket:
+              port: 5672
+            initialDelaySeconds: 25
+            periodSeconds: 10
+            timeoutSeconds: 2
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq
+  namespace: grupo-archivos-adjuntos
+  labels:
+    app: rabbitmq
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5672
+      targetPort: 5672
+      name: amqp
+    - port: 15672
+      targetPort: 15672
+      name: management
+  selector:
+    app: rabbitmq

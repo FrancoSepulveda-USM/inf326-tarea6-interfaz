@@ -1,0 +1,38 @@
+# Servicios base
+type User {
+  id: ID!
+  display_name: String!
+  "Perfil del usuario (servicio profiles)."
+  profile: Profile
+}
+
+type Channel {
+  id: ID!
+  name: String!
+}
+
+type Message {
+  id: ID!
+  channel_id: ID!
+  author_id: ID!
+  content: String!
+  created_at: String!
+  "Autor del mensaje (servicio users + profiles)."
+  author: User
+  "Si el mensaje es el anuncio de una encuesta, su ID (servicio polls)."
+  poll_id: ID
+}
+
+extend type Query {
+  listUsers: [User!]!
+  getUser(id: ID!): User
+  listChannels: [Channel!]!
+  getChannel(id: ID!): Channel
+  listMessages(channelId: ID!): [Message!]!
+}
+
+extend type Mutation {
+  createUser(displayName: String!): User!
+  createChannel(name: String!): Channel!
+  sendMessage(channelId: ID!, authorId: ID!, content: String!): Message!
+}

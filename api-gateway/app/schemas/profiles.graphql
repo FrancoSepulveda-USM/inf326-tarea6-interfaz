@@ -1,0 +1,41 @@
+# Servicio profiles
+
+type SocialHandles {
+  github: String
+  linkedin: String
+  twitter: String
+}
+
+type Profile {
+  user_id: ID!
+  display_name: String!
+  bio: String!
+  status: String!
+  avatar_url: String
+  social_handles: SocialHandles!
+  interests: [String!]!
+  languages: [String!]!
+  created_at: String!
+  updated_at: String!
+}
+
+input ProfileInput {
+  bio: String
+  status: String
+  interests: [String!]
+  languages: [String!]
+  github: String
+  linkedin: String
+  twitter: String
+}
+
+extend type Query {
+  getProfile(userId: ID!): Profile
+}
+
+extend type Mutation {
+  updateProfile(userId: ID!, input: ProfileInput!): Profile!
+  "archivo viaja en base64 dentro de GraphQL."
+  uploadAvatar(userId: ID!, filename: String!, contentType: String!, dataBase64: String!): Profile!
+  deleteAvatar(userId: ID!): Profile!
+}

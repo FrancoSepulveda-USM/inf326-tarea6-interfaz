@@ -1,0 +1,30 @@
+.env
+.env.*
+!.env.example
+!frontend/.env.local.example
+.env.k8s
+
+# Kubernetes credentials
+*.kubeconfig
+.kubeconfig
+
+.venv/
+node_modules/
+.next/
+*.tsbuildinfo
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+.idea/
+.vscode/
+
+# Private keys and local certificate bundles
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_ed25519
+id_ecdsa
