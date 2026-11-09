@@ -6,6 +6,8 @@ Esta entrega se ejecuta localmente con docker-compose, como pide el enunciado de
 
 La interfaz **solo se comunica con el API Gateway** (GraphQL). El gateway llama a cada microservicio mediante su API REST pública y junta los datos que necesita cada vista.
 
+### [Link al video](https://drive.google.com/file/d/1ad0ISkUbYuPreGeJ2gvAXZiorJiw1usS/view?usp=sharing)
+
 ```
                  ┌──────────────┐
   Navegador ───▶ │  Interfaz    │  React + Chakra UI + Apollo   (localhost:3000)
